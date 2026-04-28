@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apartrent</title>
+    <link rel="stylesheet" href="login.css">
+
+    <!-- supabaseeee javascript -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <script src="login.js" defer></script>
+
+
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <div class="signWrap">
+        <header class="taskbarSign">
+            <div class="LOGO">
+                <img id="themeLogo" src="lightlogo-theme.png" alt="">
+            </div>
+        </header>
+        <section class="signInBody" id="signInBody">
+            <div class="sign">
+                <div class="signIn">Sign in</div>
+
+
+                <!-- yung nag popop up sa signin -->
+                <p id="status"></p>
+
+
+                <div class="userWrapper">
+                    <div class="user">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">
+                            <path
+                                d="M304 128a80 80 0 1 0 -160 0 80 80 0 1 0 160 0zM96 128a128 128 0 1 1 256 0A128 128 0 1 1 96 128zM49.3 464l349.5 0c-8.9-63.3-63.3-112-129-112l-91.4 0c-65.7 0-120.1 48.7-129 112zM0 482.3C0 383.8 79.8 304 178.3 304l91.4 0C368.2 304 448 383.8 448 482.3c0 16.4-13.3 29.7-29.7 29.7L29.7 512C13.3 512 0 498.7 0 482.3z" />
+                        </svg>
+                    </div>
+                    <div class="inp">
+                        <input type="email" id="signInEmail" placeholder="Email">
+                    </div>
+                </div>
+                <div class="userWrapper">
+                    <div class="user">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640">
+                            <path
+                                d="M256 160L256 224L384 224L384 160C384 124.7 355.3 96 320 96C284.7 96 256 124.7 256 160zM192 224L192 160C192 89.3 249.3 32 320 32C390.7 32 448 89.3 448 160L448 224C483.3 224 512 252.7 512 288L512 512C512 547.3 483.3 576 448 576L192 576C156.7 576 128 547.3 128 512L128 288C128 252.7 156.7 224 192 224z" />
+                        </svg>
+                    </div>
+                    <div class="inpass">
+                        <input type="password" id="signInPassword" placeholder="Password">
+                    </div>
+                    <div class="ForgPass" onclick="showForgotPasswordModal()">Forgot Password?</div>
+                </div>
+
+                <!-- edited: para sa login email -->
+                <!-- <div class="emailButton" onclick="signInWithEmail()">
+                    <button id="continueBtn" onclick="signInWithEmail()">CONTINUE<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M438.6 278.6c12.5-12.5 12.5-32.8 0-45.3l-160-160c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L338.8 224 32 224c-17.7 0-32 14.3-32 32s14.3 32 32 32l306.7 0L233.4 393.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0l160-160z"/></svg></button>
+                </div> -->
+                <div class="emailButton" id="signInbtn" onclick="signInWithEmail()">
+                    CONTINUE <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">
+                        <path
+                            d="M438.6 278.6c12.5-12.5 12.5-32.8 0-45.3l-160-160c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L338.8 224 32 224c-17.7 0-32 14.3-32 32s14.3 32 32 32l306.7 0L233.4 393.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0l160-160z" />
+                    </svg>
+                </div>
+
+
+                <div class="qeustion">
+                    <p>Don't have an account?</p>
+                    <button id="signupbtn">Sign up</button>
+                    <!-- <a href="#">Sign Up</a> -->
+                </div>
+                <div class="or">
+                    <p>OR</p>
+                </div>
+
+                <!-- edited for login Google -->
+                <div class="googleButton" onclick="signInWithGoogle()">
+                    <button><img src="glogo.png" alt="">GOOGLE</button>
+                </div>
+            </div>
+        </section>
+        <section class="signUpBody" id="signUpBody">
+            <div class="sign">
+                <div class="signUp">Sign Up</div>
+
+                <p id="status"></p>
+                <!-- edited for login Google -->
+                <div class="googleButtonU" onclick="signInWithGoogle()">
+                    <button><img src="glogo.png" alt="">GOOGLE</button>
+                </div>
+                <div class="or">
+                    <p>OR</p>
+                </div>
+                <div class="nameWrapperU">
+                    <div class="user">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640">
+                            <path
+                                d="M544 144C552.8 144 560 151.2 560 160L560 480C560 488.8 552.8 496 544 496L96 496C87.2 496 80 488.8 80 480L80 160C80 151.2 87.2 144 96 144L544 144zM96 96C60.7 96 32 124.7 32 160L32 480C32 515.3 60.7 544 96 544L544 544C579.3 544 608 515.3 608 480L608 160C608 124.7 579.3 96 544 96L96 96zM240 312C270.9 312 296 286.9 296 256C296 225.1 270.9 200 240 200C209.1 200 184 225.1 184 256C184 286.9 209.1 312 240 312zM208 352C163.8 352 128 387.8 128 432C128 440.8 135.2 448 144 448L336 448C344.8 448 352 440.8 352 432C352 387.8 316.2 352 272 352L208 352zM408 208C394.7 208 384 218.7 384 232C384 245.3 394.7 256 408 256L488 256C501.3 256 512 245.3 512 232C512 218.7 501.3 208 488 208L408 208zM408 304C394.7 304 384 314.7 384 328C384 341.3 394.7 352 408 352L488 352C501.3 352 512 341.3 512 328C512 314.7 501.3 304 488 304L408 304z" />
+                        </svg>
+                    </div>
+                    <div class="inp">
+                        <input type="Name" id="signUpName" placeholder="Name">
+                    </div>
+                </div>
+                <div class="userWrapper">
+                    <div class="user">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">
+                            <path
+                                d="M304 128a80 80 0 1 0 -160 0 80 80 0 1 0 160 0zM96 128a128 128 0 1 1 256 0A128 128 0 1 1 96 128zM49.3 464l349.5 0c-8.9-63.3-63.3-112-129-112l-91.4 0c-65.7 0-120.1 48.7-129 112zM0 482.3C0 383.8 79.8 304 178.3 304l91.4 0C368.2 304 448 383.8 448 482.3c0 16.4-13.3 29.7-29.7 29.7L29.7 512C13.3 512 0 498.7 0 482.3z" />
+                        </svg>
+                    </div>
+                    <div class="inp">
+                        <input type="email" id="signUpEmail" placeholder="Email">
+                    </div>
+                </div>
+                <div class="passWrapper">
+                    <div class="user">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640">
+                            <path
+                                d="M256 160L256 224L384 224L384 160C384 124.7 355.3 96 320 96C284.7 96 256 124.7 256 160zM192 224L192 160C192 89.3 249.3 32 320 32C390.7 32 448 89.3 448 160L448 224C483.3 224 512 252.7 512 288L512 512C512 547.3 483.3 576 448 576L192 576C156.7 576 128 547.3 128 512L128 288C128 252.7 156.7 224 192 224z" />
+                        </svg>
+                    </div>
+                    <div class="inp">
+                        <input type="password" id="signUpPassword" placeholder="Password">
+                    </div>
+                </div>
+                <div class="TC">
+                    <label for="userType" class="agr">Select Login Portal:</label>
+                    <select id="userType" name="userType" required>
+                        <option value="">-- Choose your role --</option>
+                        <option value="landlord">Landlord</option>
+                        <option value="rentor">Rentor</option>
+                    </select>
+                </div>
+
+                <!-- edited for signup email -->
+                <div class="emailButton" id="signUpbtn" onclick="signUpWithEmail()">
+                    CONTINUE <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">
+                        <path
+                            d="M438.6 278.6c12.5-12.5 12.5-32.8 0-45.3l-160-160c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L338.8 224 32 224c-17.7 0-32 14.3-32 32s14.3 32 32 32l306.7 0L233.4 393.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0l160-160z" />
+                    </svg>
+                </div>
+                <div class="qeustionU">
+                    <p>Already have an account?</p>
+                    <button id="signinbtn">Sign In</button>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Forgot Password Modal -->
+    <div id="forgotPasswordModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Reset Password</h3>
+                <span class="close" onclick="closeForgotPasswordModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p>Enter your email address and we'll send you a secure link to reset your password.</p>
+                <div class="input-group">
+                    <label for="forgotEmail">Email Address</label>
+                    <input type="email" id="forgotEmail" placeholder="Enter your email">
+                </div>
+                <div class="modal-actions">
+                    <button class="btn-secondary" onclick="closeForgotPasswordModal()">Cancel</button>
+                    <button class="btn-primary" onclick="sendResetLink()">Send Reset Link</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Reset Password Modal -->
+    <div id="resetPasswordModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Reset Password</h3>
+                <span class="close" onclick="closeResetPasswordModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p>Please enter your new password below.</p>
+                <div class="input-group">
+                    <label for="newPassword">New Password</label>
+                    <input type="password" id="newPassword" placeholder="Enter new password">
+                </div>
+                <div class="input-group">
+                    <label for="confirmPassword">Confirm Password</label>
+                    <input type="password" id="confirmPassword" placeholder="Confirm new password">
+                </div>
+                <div class="modal-actions">
+                    <button class="btn-secondary" onclick="closeResetPasswordModal()">Cancel</button>
+                    <button class="btn-primary" onclick="resetPasswordFromModal()">Reset Password</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="client.js" defer></script>
+    <button id="themeToggleLogin" class="theme-toggle" type="button" aria-label="Toggle theme" style="display:none">🌙</button>
+    <script>
+      (function(){
+        try {
+          const root = document.documentElement;
+          const btn = document.getElementById('themeToggleLogin');
+          // Force light mode on login page, ignore stored/system preference
+          root.setAttribute('data-theme', 'light');
+          
+          // Update logo to light theme (since login is always light mode)
+          function updateLogo() {
+            const mainLogo = document.getElementById('themeLogo');
+            if (mainLogo) mainLogo.src = 'lightlogo-theme.png';
+          }
+          
+          // Set logo to light theme
+          updateLogo();
+          
+          // Hide/disable toggle on login to keep light theme
+          if (btn) {
+            btn.style.display = 'none';
+            btn.disabled = true;
+          }
+        } catch(_) {}
+      })();
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apartrent</title>
+    <link rel="icon" type="image/png" href="lightlogo-theme.png">
+    <link rel="stylesheet" href="landlord.css">
+    <link rel="stylesheet" href="leaflet-maps.css">
+
+    <!-- Supabase client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <script>
+        const SUPABASE_URL = "https://kexgliyjjyurshanpxdt.supabase.co";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtleGdsaXlqanl1cnNoYW5weGR0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc5NDk4NjYsImV4cCI6MjA3MzUyNTg2Nn0.ltYJ7VODuilex_gbp3dqhwyAsEmPVbhWnExzTppVmR8";
+
+        // create global client so other scripts can reuse
+        window.supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    </script>
+
+    <script src="leaflet-maps-integration.js" defer></script>
+    <!-- cache-bust during development to ensure latest JS -->
+    <script src="landlord.js?v=20260312-1" defer></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <div class="status-overlay" id="statusOverlay" aria-live="polite" aria-hidden="true">
+        <div class="status-card">
+            <div class="status-spinner" aria-hidden="true"></div>
+            <div class="status-icon" aria-hidden="true"></div>
+            <p class="status-message">Loading…</p>
+        </div>
+    </div>
+    <div class="sidemenucss">
+        <aside class="sidemenu">
+            <img id="themeLogo" src="lightlogo-theme.png" alt="Logo">
+            <div class="menufeatures">
+                <a class="page active" href="" data-target="Dashboard"><i class="fa-solid fa-list"></i>Dashboard</a>
+                <a class="page" href="" data-target="Advertise"><i class="fa-solid fa-bookmark"></i>Advertise</a>
+                <a class="page" href="" data-target="Rented"><i class="fa-solid fa-bed"></i>Rented</a>
+                <!-- <a class="page" href="" data-target="Rented"><i class="fa-solid fa-bed"></i>Rented Place</a> -->
+                <a class="page oops" href="" onclick=openLogOut()><i
+                        class="fa-solid fa-arrow-right-from-bracket"></i>Logout</a>
+            </div>
+        </aside>
+    </div>
+    <div class="mainright sidelp actsidelp" id="Dashboard">
+        <div class="pagename">
+            <h2>Listed Apartment Dashboard</h2>
+            <div class="header-right">
+                <button id="themeToggleLL" class="theme-toggle-header" type="button" aria-label="Toggle theme">
+                    <span class="theme-label">Light Mode</span>
+                    <span class="theme-icon">🌙</span>
+                </button>
+                <div class="regedacc" onclick=openUserAcc()>
+                    <p>Hello, Landlord!</p>
+                    <i class="fa-regular fa-circle-user fa-2x"></i>
+                </div>
+            </div>
+        </div>
+        <div class="layer2lp">
+            <div class="searchbar">
+                <input id="landlordSearch" type="search" name="search" placeholder="Search by location, price, rating">
+                <div class="filter-dropdown" id="landlordFilterDropdown">
+                    <i class="fa-solid fa-filter" id="landlordFilterIcon"></i>
+                    <div class="filter-menu" id="landlordFilterMenu">
+                        <div class="filter-option" data-filter="price">
+                            <i class="fa-solid fa-dollar-sign"></i>
+                            <span>Price (Low to High)</span>
+                        </div>
+                        <div class="filter-option" data-filter="rating">
+                            <i class="fa-solid fa-star"></i>
+                            <span>Rating (High to Low)</span>
+                        </div>
+                        <div class="filter-option" data-filter="default">
+                            <i class="fa-solid fa-rotate-left"></i>
+                            <span>Default (Newest)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="availistings" id="landlordListings">
+        </div>
+        <div class="selectedrightside">
+            <div class="selpagename">
+                <div class="pagenav">
+                    <h2>Listed Apartment Dashboard</h2>
+                    <button onclick="goBack()"><i class="fa-solid fa-angles-left"></i>Back</button>
+                </div>
+                <div class="regedacc" onclick=openUserAcc()>
+                    <p>Hello, Landlord!</p>
+                    <i class="fa-regular fa-circle-user fa-2x"></i>
+                </div>
+            </div>
+            <div class="sidetoside">
+                <div class="leftside">
+                    <div class="detailcard">
+                        <h3>Apartment details</h3>
+                        <p style="margin: 6px 0 14px; font-size: 0.9rem; color: var(--text-muted, #6b7280);">
+                            Fields marked with <span style="color: var(--error-color, #ef4444);">*</span> are required.
+                        </p>
+
+                        <div class="detail-row">
+                            <span class="detail-label">Price</span>
+                            <input id="adPrice" type="number" class="detail-input" placeholder="Insert price">
+                        </div>
+
+                        <div class="detail-row">
+                            <span class="detail-label">Location</span>
+                            <input id="adLocation" type="text" class="detail-input" placeholder="Insert location">
+                            <button onclick="openMapPickerModal('edit')" style="margin-left: 8px; background: var(--primary-color, #007bff); color: white; border-radius: var(--border-radius); border: none; padding: 10px 12px; cursor: pointer;" title="Pick location on map">
+                                <i class="fa-solid fa-map-location-dot"></i>
+                            </button>
+                        </div>
+                        <input type="hidden" id="apartmentLatitude" name="latitude">
+                        <input type="hidden" id="apartmentLongitude" name="longitude">
+                        <div class="detail-row">
+                            <span class="detail-label">Description</span>
+                            <textarea id="adDescription" class="detail-input"
+                                placeholder="Insert detailed description"></textarea>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label" id="adUnitSizeLabel">Unit type</span>
+                            <input id="adUnitSize" type="text" class="detail-input"
+                                placeholder="Insert unit size ex. per sqm">
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Total units in building</span>
+                            <input id="adTotalUnits" type="number" class="detail-input" min="1" step="1"
+                                placeholder="How many units are in this building?">
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Currently available units</span>
+                            <input id="adAvailableUnits" type="number" class="detail-input" min="0" step="1"
+                                placeholder="How many units are available right now?">
+                        </div>
+                        <div class="detail-row" id="adUnitStatusDisplayRow" style="display:none;">
+                            <span class="detail-label">Unit status (click to toggle)</span>
+                            <div id="adUnitStatusDisplay" class="unit-status-grid" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;">
+                                <!-- Populated by JS: Unit 1: Available, Unit 2: Occupied, etc. -->
+                            </div>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Amenities</span>
+                            <input id="adAmenities" type="text" class="detail-input" placeholder="Insert amenities">
+                        </div>
+                        <div class="detail-row payment-methods-row">
+                            <span class="detail-label">Payment Method <span style="color: var(--error-color, #ef4444);">*</span></span>
+                            <div class="detail-input" id="dashboardPaymentMethodsContainer" style="min-height: 80px;">
+                                <!-- Richer payment config (Configured/Not Configured badges) loaded via loadPaymentMethodsConfigForApartmentEdit -->
+                                <p style="color: var(--text-muted); font-size: 0.9rem;">Loading...</p>
+                            </div>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Floor Plan</span>
+                            <input id="adDashFloorPlan" type="file" accept="image/*" class="detail-input">
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Requirements</span>
+                            <div class="detail-input" style="display: flex; flex-direction: column; gap: 5px;">
+                                <label><input type="checkbox" name="requirements" value="Barangay Clearance"> Barangay Clearance</label>
+                                <label><input type="checkbox" name="requirements" value="Police Clearance"> Police Clearance</label>
+                                <label><input type="checkbox" name="requirements" value="Proof of Income"> Proof of Income</label>
+                                <label><input type="checkbox" name="requirements" value="Valid ID"> Valid ID</label>
+                                <label><input type="checkbox" name="requirements" value="No pets agreement"> Pets & Vehicle terms</label>
+                            </div>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Contact Number</span>
+                            <input id="adContactDash" type="text" class="detail-input"
+                                placeholder="Insert contact number">
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Gmail</span>
+                            <input id="adEmailDash" type="email" class="detail-input"
+                                placeholder="Insert Gmail address">
+                        </div>
+                        <div class="savechanges">
+                            <h3>Save changes?</h3>
+                            <div class="savechangesbtns">
+                                <button>No</button>
+                                <button id="adUpdateBtn">Update Property</button>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+                <div class="rightside">
+                    <div class="availphtsouter">
+                        <div class="photos">
+                            <img src="final logo.PNG" alt="photos">
+                        </div>
+                        <div class="photo-actions">
+                            <input type="file" id="dashPhotoInput" accept="image/*" multiple style="display:none">
+                            <!-- Add / delete handled in-photo overlay buttons rendered by JS -->
+                        </div>
+                    </div>
+                    
+                    <!-- Dashboard Panorama 360 View Section -->
+                    <div class="dashboard-panorama-section" style="margin-top: 20px;">
+                        <h3 style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px;">
+                            <i class="fa-solid fa-vr-cardboard" style="color: var(--primary-color);"></i>
+                            360° Panorama Views
+                        </h3>
+                        <div class="dashboard-panorama-upload-area" style="text-align: center; padding: 16px; background: var(--bg-secondary); border: 2px dashed var(--border-color); border-radius: 12px; margin-bottom: 16px;">
+                            <input type="file" id="dashPanoramaInput" accept="image/*" multiple style="display: none;">
+                            <button class="dashboard-panorama-upload-btn" onclick="document.getElementById('dashPanoramaInput').click();" style="background: var(--primary-color); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                                <i class="fa-solid fa-cloud-arrow-up"></i>
+                                Add Panorama Images
+                            </button>
+                            <p style="margin-top: 8px; color: var(--text-muted); font-size: 0.85rem;">Upload 360° panorama images</p>
+                        </div>
+                        <div class="dashboard-panorama-list" id="dashboardPanoramaList">
+                            <!-- Panorama items will be added here dynamically -->
+                        </div>
+                    </div>
+                    
+                    <div class="renters-box-container" style="margin-bottom: 20px;">
+                        <div style="background: var(--bg-secondary); border-radius: 12px; padding: var(--space-lg); border: 1px solid var(--border-color);">
+                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-md);">
+                                <h3 style="margin: 0; display: flex; align-items: center; gap: 8px;">
+                                    <i class="fa-solid fa-file-lines" style="color: var(--primary-color);"></i>
+                                    Rental Applications
+                                </h3>
+                                <span style="font-size: 0.85rem; color: var(--text-muted);">Pending applications for this property</span>
+                            </div>
+                            <div class="renters-box" style="display: flex; flex-direction: column; gap: 12px; max-height: 400px; overflow-y: auto;">
+                                <!-- Applications will be dynamically rendered here -->
+                            </div>
+                        </div>
+                    </div>
+                    <div class="boxchat">
+                        <div class="chat-box" id="chatBox">
+                            <div class="chat-header">
+                                <div class="chat-title">
+                                    <i class="fa-solid fa-comments"></i>
+                                    <div class="chat-title-text">
+                                        <h3>Live Chat</h3>
+                                        <span class="chat-with">with <span id="clientName">Client</span></span>
+                                    </div>
+                                </div>
+                                <div class="chat-status">
+                                    <div class="status-dot"></div>
+                                    <span>Online</span>
+                                </div>
+                            </div>
+                            <div class="specimessages" id="messages">
+                                <!-- Messages loaded dynamically -->
+                            </div>
+                            <div class="input-area">
+                                <input type="text" id="chatInput" placeholder="Type a message...">
+                                <button onclick="sendMessage()">Send</button>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Pending payment receipts box removed from Dashboard to avoid cross-apartment confusion -->
+                    <div class="review-card">
+                        <div class="curratings">
+                            <div class="revret">
+                                <div class="leftings">
+                                    <div class="rating-header">
+                                        <h3>Review & Ratings</h3>
+                                    </div>
+                                    <div class="stars">
+                                        <i class="star fa fa-star"></i>
+                                        <i class="star fa fa-star"></i>
+                                        <i class="star fa fa-star"></i>
+                                        <i class="star fa fa-star"></i>
+                                        <i class="star fa fa-star"></i>
+                                    </div>
+                                </div>
+                                <div class="rightings">
+                                    <div class="score">5.0</div>
+                                    <div class="out-of">OUT OF 5</div>
+                                </div>
+                            </div>
+                            <div class="sort-section">
+                                <div class="sort-dropdown" id="reviewsSort">
+                                    <button type="button" class="sd-btn" aria-haspopup="listbox" aria-expanded="false">
+                                        <span class="sd-prefix">Sort By</span>
+                                        <span class="sd-label">Most Recent</span>
+                                        <i class="fa-solid fa-caret-down sd-caret" aria-hidden="true"></i>
+                                    </button>
+                                    <ul class="sd-menu" role="listbox" aria-label="Sort reviews">
+                                        <li role="option" data-sort-value="recent" class="selected">Most Recent</li>
+                                        <li role="option" data-sort-value="highest">Highest Rated</li>
+                                        <li role="option" data-sort-value="lowest">Lowest Rated</li>
+                                        <li role="option" data-sort-value="oldest">Oldest</li>
+                                    </ul>
+                                </div>
+                                <span>1 Review</span>
+                            </div>
+                            <!-- Reviews populated dynamically -->
+                        </div>
+                        <div class="review-box">
+                            <!-- Individual reviews will be rendered here by JavaScript -->
+                        </div>
+                    </div>
+                    <!-- Transaction history (below review-card) - monitor only, no payment -->
+                    
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="rentedright sidelp" id="Rented">
+        <div class="pagename">
+            <h2>Rented Apartments</h2>
+            <div class="regedacc" onclick=openUserAcc()>
+                <p>Hello, Landlord!</p>
+                <i class="fa-regular fa-circle-user fa-2x"></i>
+            </div>
+        </div>
+        <div class="availistings" id="landlordRentedListings">
+            <!-- Rented cards render here -->
+        </div>
+        
+        <!-- No Rented Apartment Message for Landlord -->
+        <div id="noRentedApartmentMessageLandlord" class="no-rented-message" style="display: none;">
+            <div class="no-apartment-illustration">
+                <div class="house-icon">
+                    <i class="fas fa-home"></i>
+                </div>
+                <div class="search-icon">
+                    <i class="fas fa-bed"></i>
+                </div>
+            </div>
+            <div class="no-apartment-content">
+                <h4>No Rented Apartments Yet</h4>
+                <p>You don't have any tenants renting your properties yet. Your listed apartments are waiting for their first renters!</p>
+                <button class="browse-apartments-btn" onclick="viewDashboard()">
+                    <i class="fas fa-list"></i>
+                    View Your Listings
+                </button>
+            </div>
+        </div>
+        
+        <div class="selectedrightside">
+            <div class="selpagename">
+                <div class="pagenav">
+                    <h2>Rented Apartment</h2>
+                    <button onclick="goBack()"><i class="fa-solid fa-angles-left"></i>Back</button>
+                </div>
+                <div class="regedacc" onclick=openUserAcc()>
+                    <p>Hello, Landlord!</p>
+                    <i class="fa-regular fa-circle-user fa-2x"></i>
+                </div>
+            </div>
+            <div class="sidetoside">
+                <div class="leftside">
+                    <div class="detailcard renter-details">
+                        <h3>Tenant details</h3>
+                        <div id="rdWalkInLabel" style="display:none; margin-bottom:8px; font-size:0.85rem; font-weight:600; color:var(--info-color,#0ea5e9);">
+                            Walk-in client
+                        </div>
+
+                        <div class="rd-grid">
+                            <div><b>Status:</b> <span id="rdStatus">—</span></div>
+                            <div><b>Approved At:</b> <span id="rdApprovedAt">—</span></div>
+                            <div><b>Submitted At:</b> <span id="rdSubmittedAt">—</span></div>
+                        </div>
+
+                        <h4>Basic Information</h4>
+                        <div class="rd-grid">
+                            <div><b>Full Name:</b> <span id="rdFullName">—</span></div>
+                            <div><b>Guardian Name:</b> <span id="rdGuardianName">—</span></div>
+                            <div><b>Emergency Contact:</b> <span id="rdEmergencyContact">—</span></div>
+                            <div><b>Email:</b> <span id="rdEmail">—</span></div>
+                            <div><b>Phone:</b> <span id="rdPhone">—</span></div>
+                            <div class="rd-span-2"><b>Current Address:</b> <span id="rdCurrentAddress">—</span></div>
+                        </div>
+
+                        <h4>Rental Details</h4>
+                        <div class="rd-grid">
+                            <div><b>Move-in Date:</b> <span id="rdMoveInDate">—</span></div>
+                            <div><b>Length of Stay:</b> <span id="rdLengthOfStay">—</span></div>
+                            <div><b>Total Occupants:</b> <span id="rdTotalOccupants">—</span></div>
+                            <div><b>Has Pets:</b> <span id="rdHasPets">—</span></div>
+                            <div><b>Has Vehicle:</b> <span id="rdHasVehicle">—</span></div>
+                        </div>
+
+                        <h4>Employment / Income</h4>
+                        <div class="rd-grid">
+                            <div><b>Status:</b> <span id="rdEmploymentStatus">—</span></div>
+                            <div><b>Guardian Employment:</b> <span id="rdGuardianEmploymentStatus">—</span></div>
+                            <div class="rd-span-2"><b>Monthly Income:</b> <span id="rdMonthlyIncome">—</span></div>
+                        </div>
+
+                        <h4>Address & Notes</h4>
+                        <div class="addbox">
+                            <div><b>Additional Info:</b><br><span id="rdAdditionalInfo">—</span></div>
+                        </div>
+
+                        <h4>Attachments</h4>
+                        <div id="rdAttachments" class="rd-attachments"></div>
+
+                        <!-- Remove tenant action moved to card status row -->
+                    </div>
+                </div>
+                <div class="rightside">
+                    <div class="availrntphtsouter">
+                        <div class="rphotos">
+                            <img src="final logo.PNG" alt="photos">
+                        </div>
+                        <!-- <div class="photo-actions">
+                            <input type="file" id="dashPhotoInput" accept="image/*" multiple style="display:none">
+                            <button id="dashChangePhotoBtn">Change Photo</button>
+                        </div> -->
+                    </div>
+                    <div class="boxchat">
+                        <div class="chat-box" id="chatBox">
+                            <div class="chat-header">
+                                <div class="chat-title">
+                                    <i class="fa-solid fa-comments"></i>
+                                    <div class="chat-title-text">
+                                        <h3>Live Chat</h3>
+                                        <span class="chat-with">with <span id="clientName">Client</span></span>
+                                    </div>
+                                </div>
+                                <div class="chat-status">
+                                    <div class="status-dot"></div>
+                                    <span>Online</span>
+                                </div>
+                            </div>
+                            <div class="specimessages" id="messages">
+                                <!-- Messages loaded dynamically -->
+                            </div>
+                            <div class="input-area">
+                                <input type="text" id="chatInput" placeholder="Type a message...">
+                                <button onclick="sendMessage()">Send</button>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Pending payment receipts (above review-card) -->
+                    <div class="pending-receipts-box" id="rentedPendingReceiptsBox" style="margin-bottom: 20px;">
+                        <div class="pending-receipts-header">
+                            <h3><i class="fa-solid fa-clock"></i> Pending Receipts</h3>
+                            <span class="pending-receipts-sub">Review and mark as paid</span>
+                        </div>
+                        <div class="pending-receipts-list" id="rentedPendingReceiptsList">
+                            <!-- Filled by JS -->
+                        </div>
+                    </div>
+                    <div class="review-card">
+                        <div class="curratings">
+                            <div class="revret">
+                                <div class="leftings">
+                                    <div class="rating-header">
+                                        <h3>Review & Ratings</h3>
+                                    </div>
+                                    <div class="stars">
+                                        <i class="star fa fa-star"></i>
+                                        <i class="star fa fa-star"></i>
+                                        <i class="star fa fa-star"></i>
+                                        <i class="star fa fa-star"></i>
+                                        <i class="star fa fa-star"></i>
+                                    </div>
+                                </div>
+                                <div class="rightings">
+                                    <div class="score">5.0</div>
+                                    <div class="out-of">OUT OF 5</div>
+                                </div>
+                            </div>
+                            <div class="sort-section">
+                                <div class="sort-dropdown" id="reviewsSort">
+                                    <button type="button" class="sd-btn" aria-haspopup="listbox" aria-expanded="false">
+                                        <span class="sd-prefix">Sort By</span>
+                                        <span class="sd-label">Most Recent</span>
+                                        <i class="fa-solid fa-caret-down sd-caret" aria-hidden="true"></i>
+                                    </button>
+                                    <ul class="sd-menu" role="listbox" aria-label="Sort reviews">
+                                        <li role="option" data-sort-value="recent" class="selected">Most Recent</li>
+                                        <li role="option" data-sort-value="highest">Highest Rated</li>
+                                        <li role="option" data-sort-value="lowest">Lowest Rated</li>
+                                        <li role="option" data-sort-value="oldest">Oldest</li>
+                                    </ul>
+                                </div>
+                                <span>1 Review</span>
+                            </div>
+                            <!-- Reviews populated dynamically -->
+                        </div>
+                        <div class="review-box">
+                            <!-- Individual reviews will be rendered here by JavaScript -->
+                        </div>
+                    </div>
+                    <!-- Transaction history (below review-card) -->
+                    <div class="transaction-history-box" id="rentedTransactionHistoryBox" style="margin-top: 20px;">
+                        <h4 class="transaction-history-title"><i class="fa-solid fa-receipt"></i> Transaction History</h4>
+                        <div class="transaction-list" id="rentedTransactionHistoryList">
+                            <div class="transaction-item transaction-header">
+                                <span class="tx-amount">Amount</span>
+                                <span class="tx-date">Date</span>
+                                <span class="tx-ref">Reference No.</span>
+                                <span class="tx-payment">Payment</span>
+                                <span class="tx-view"></span>
+                            </div>
+                            <div class="transaction-empty" id="rentedTransactionEmptyState">No transactions yet.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="advertiseright sidelp" id="Advertise">
+        <div class="pagename">
+            <h2>Advertise</h2>
+            <div class="regedacc" onclick=openUserAcc()>
+                <p>Hello, Landlord!</p>
+                <i class="fa-regular fa-circle-user fa-2x"></i>
+            </div>
+        </div>
+        <div class="availistings">
+            <div class="outerad">
+                <div class="photoad">
+                    <i class="fa-solid fa-plus"></i>
+                </div>
+            </div>
+        </div>
+        <div class="selectedrightside">
+            <div class="selpagename">
+                <div class="pagenav1">
+                    <h2>List an Apartment</h2>
+                    <button onclick="goBack()"><i class="fa-solid fa-angles-left"></i>Back</button>
+                </div>
+                <div class="regedacc" onclick=openUserAcc()>
+                    <p>Hello, Landlord!</p>
+                    <i class="fa-regular fa-circle-user fa-2x"></i>
+                </div>
+            </div>
+            <div class="sidetoside">
+                <div class="leftside">
+                    <div class="detailcard">
+                        <h3>Apartment details</h3>
+
+                        <div class="detail-row">
+                            <span class="detail-label">Price <span style="color: var(--error-color, #ef4444);">*</span></span>
+                            <input id="newAdPrice" type="number" class="detail-input" required
+                                placeholder="Insert price per month">
+                        </div>
+
+                        <div class="detail-row">
+                            <span class="detail-label">Location <span style="color: var(--error-color, #ef4444);">*</span></span>
+                            <input id="newAdLocation" type="text" class="detail-input" required placeholder="Insert location">
+                            <button onclick="openMapPickerModal('new')" style="margin-left: 8px; background: var(--primary-color, #007bff); color: white; border-radius: var(--border-radius); border: none; padding: 10px 12px; cursor: pointer;" title="Pick location on map">
+                                <i class="fa-solid fa-map-location-dot"></i>
+                            </button>
+                        </div>
+                        <input type="hidden" id="newApartmentLatitude" name="latitude">
+                        <input type="hidden" id="newApartmentLongitude" name="longitude">
+
+                        <div class="detail-row">
+                            <span class="detail-label">Description <span style="color: var(--error-color, #ef4444);">*</span></span>
+                            <textarea id="newAdDescription" class="detail-input" required
+                                placeholder="Insert detailed description"></textarea>
+                        </div>
+
+                        <div class="detail-row">
+                            <span class="detail-label" id="newAdUnitSizeLabel">Unit type <span style="color: var(--error-color, #ef4444);">*</span></span>
+                            <input id="newAdUnitSize" type="text" class="detail-input" required
+                                placeholder="Insert unit size ex. per sqm">
+                        </div>
+
+                        <div class="detail-row">
+                            <span class="detail-label">Total units in building <span style="color: var(--error-color, #ef4444);">*</span></span>
+                            <input id="newAdTotalUnits" type="number" class="detail-input" required min="1" step="1" value="1"
+                                placeholder="How many units are in this building?">
+                        </div>
+
+                        <div class="detail-row">
+                            <span class="detail-label">Currently available units <span style="color: var(--error-color, #ef4444);">*</span></span>
+                            <input id="newAdAvailableUnits" type="number" class="detail-input" required min="0" step="1" value="1"
+                                placeholder="How many units are available right now?">
+                        </div>
+
+                        <div class="detail-row">
+                            <span class="detail-label">Amenities <span style="color: var(--error-color, #ef4444);">*</span></span>
+                            <input id="newAdAmenities" type="text" class="detail-input" required placeholder="Insert amenities">
+                        </div>
+
+                        <div class="detail-row payment-methods-row">
+                            <span class="detail-label">Payment Method <span style="color: var(--error-color, #ef4444);">*</span></span>
+                            <div class="detail-input" id="advertisePaymentMethodsContainer" style="min-height: 80px;">
+                                <!-- Same richer config as Dashboard - configure once, applies when clients rent -->
+                                <p style="color: var(--text-muted); font-size: 0.9rem;">Loading...</p>
+                            </div>
+                        </div>
+
+                        <div class="detail-row">
+                            <span class="detail-label">Floor Plan</span>
+                            <input id="adFloorPlan" type="file" class="detail-input" accept="image/*">
+                        </div>
+
+
+                        <div class="detail-row">
+                            <span class="detail-label">Requirements <span style="color: var(--error-color, #ef4444);">*</span></span>
+                            <div class="detail-input" style="display: flex; flex-direction: column; gap: 8px;">
+                                <label>
+                                    <input type="checkbox" name="requirements" value="Barangay Clearance">
+                                    Barangay Clearance
+                                </label>
+                                <label>
+                                    <input type="checkbox" name="requirements" value="Police Clearance">
+                                    Police Clearance
+                                </label>
+                                <label>
+                                    <input type="checkbox" name="requirements" value="Proof of Income">
+                                    Proof of Income
+                                </label>
+                                <label>
+                                    <input type="checkbox" name="requirements" value="Valid ID">
+                                    Valid ID
+                                </label>
+                                <label>
+                                    <input type="checkbox" name="requirements" value="No pets agreement">
+                                    Pets & Vehicle terms
+                                </label>
+                                <input id="adOtherReq" class="reqop" name="other-requirements"
+                                    placeholder="Others (optional)">
+                            </div>
+                        </div>
+
+                        <div class="detail-row">
+                            <span class="detail-label">Contact Number <span style="color: var(--error-color, #ef4444);">*</span></span>
+                            <input id="adContact" type="number" class="detail-input" required
+                                placeholder="Insert contact number">
+                        </div>
+
+                        <div class="detail-row">
+                            <span class="detail-label">Gmail <span style="color: var(--error-color, #ef4444);">*</span></span>
+                            <input id="adEmail" type="email" class="detail-input" required placeholder="Insert Gmail address"
+                                pattern="[a-zA-Z0-9._%+\-]+@gmail\.com$" title="Please enter a valid Gmail address">
+                        </div>
+
+                    </div>
+                </div>
+                <div class="rightside">
+                    <div class="availadphtsouter">
+                        <input type="file" id="photoInput" accept="image/*" multiple required>
+                        <div class="photosadd" onclick="document.getElementById('photoInput').click();">
+                            <i class="fa-solid fa-plus"></i>
+                        </div>
+                    </div>
+                    
+                    <!-- Panorama 360 View Section -->
+                    <div class="panorama-section">
+                        <h3><i class="fa-solid fa-vr-cardboard"></i> 360° Panorama Views</h3>
+                        <div class="panorama-upload-area">
+                            <input type="file" id="panoramaInput" accept="image/*" multiple style="display: none;">
+                            <button class="panorama-upload-btn" onclick="document.getElementById('panoramaInput').click();">
+                                <i class="fa-solid fa-cloud-arrow-up"></i>
+                                Upload Panorama Images
+                            </button>
+                            <p class="panorama-hint">Upload equirectangular panorama images for 360° view</p>
+                        </div>
+                        <div class="panorama-list" id="panoramaList">
+                            <!-- Panorama items will be added here dynamically -->
+                        </div>
+                    </div>
+                    
+                    <div class="saveadchanges">
+                        <h3>Save all changes?</h3>
+                        <div class="savechangesbtns">
+                            <button>No</button>
+                            <button id="adPublishBtn">Yes and Publish</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+
+
+
+
+    <div class="useracc">
+        <div class="useraccdet">
+            <div class="useraccwbg">
+                <div class="accdetclos">
+                    <svg onclick=closeUserAcc() xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512">
+                        <path
+                            d="M342.6 150.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192 210.7 86.6 105.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L146.7 256 41.4 361.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192 301.3 297.4 406.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.3 256 342.6 150.6z" />
+                    </svg>
+                </div>
+                <div class="circleuserpfp">
+                    <i class="fa-regular fa-circle-user fa-4x"></i>
+                </div>
+                <p>Hello, Client!</p>
+                <p>@gmail</p>
+                <div class="chngmail">
+                    <button onclick="showChangeEmailModal()">Change Email</button>
+                </div>
+                <div class="useraccdesc">
+                    <p>Welcome To Apartrent, where you can advertise your property effectively.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="outlog">
+        <div class="userlogoutdet">
+            <div class="userlogoutwbg">
+                <div class="accdetclos">
+                    <svg onclick=closeLogOut() xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512">
+                        <path
+                            d="M342.6 150.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192 210.7 86.6 105.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L146.7 256 41.4 361.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192 301.3 297.4 406.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.3 256 342.6 150.6z" />
+                    </svg>
+                </div>
+                <div class="circleuserpfp">
+                    <i class="fa-regular fa-circle-user fa-4x"></i>
+                </div>
+                <div class="lgosenten">
+                    <p>Are you sure you want to logout?</p>
+                </div>
+                <div class="logoutBtn">
+                    <button>Log out</button>
+                </div>
+                <div class="logoutCancelBtn">
+                    <button>Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="changeEmailModal" class="modal-overlay">
+        <div class="modal-blue-content">
+            <div class="modal-content">
+                <h3>Change Email</h3>
+                <input id="newEmailInput" type="email" placeholder="Enter new email" />
+                <div id="changeEmailError" class="error-message"></div>
+                <div class="modal-buttons">
+                    <button id="submitChangeEmailBtn" class="btn btn-primary">Submit</button>
+                    <button id="cancelChangeEmailBtn" class="btn btn-secondary">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+    <div id="paymentPopupModal">
+        <div class="paymentdetspop">
+            <div class="paymentModal">
+                <span id="closePaymentPopup" onclick="closePaymentPopup()">&times;</span>
+                <h3 id="paymentPopupTitle">Add Payment Info</h3>
+                <form id="paymentPopupForm" onsubmit="event.preventDefault(); submitPaymentPopup();">
+                    <div class="payModalname">
+                        <label>Account Name:</label>
+                        <input type="text" name="payeeName" required style="width:100%;" placeholder="Enter your account name" maxlength="100">
+                    </div>
+                    <div class="payModalnum">
+                        <label>Account Number/Mobile Number:</label>
+                        <input type="text" name="payeeNumber" required style="width:100%;" placeholder="Enter account/mobile number" maxlength="20">
+                    </div>
+                    <div class="payModalqr">
+                        <label>QR Code Image:</label>
+                        <input id="paymentQRInput" type="file" name="payeeQR" accept="image/png,image/jpeg,image/jpg" style="width:100%;">
+                        <small style="color: #666; font-size: 0.8rem;">Upload your QR code for easier payments (PNG, JPG only, max 5MB)</small>
+                    </div>
+                    <input type="hidden" name="paymentMethod" id="paymentMethodHidden">
+                    <div class="paySave">
+                        <button type="submit">Save</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Walk-in Tenant Details Modal (Landlord only) -->
+    <div id="walkInTenantModal" class="modal-overlay" style="display:none; position:fixed; inset:0; align-items:center; justify-content:center; background:rgba(0,0,0,0.35); z-index:9999;">
+        <div class="modal-blue-content" style="max-width:420px; width:90%;">
+            <div class="modal-content" style="margin:0 auto; text-align:left;">
+                <h3>Walk-in tenant details</h3>
+                <p style="margin: 6px 0 14px; font-size: 0.9rem; color: var(--text-muted, #6b7280);">
+                    This is only for walk-in tenants (no online rental application).
+                </p>
+                <div style="display:flex; flex-direction:column; gap:12px;">
+                    <div style="display:flex; flex-direction:column; gap:4px;">
+                        <label for="walkInFullName" style="font-weight:600; font-size:0.9rem; color: var(--text-primary); margin:0;">
+                            Full name <span style="color: var(--error-color, #ef4444);">*</span>
+                        </label>
+                        <input id="walkInFullName" type="text" placeholder="" required style="margin:0;" />
+                    </div>
+
+                    <div style="display:flex; flex-direction:column; gap:4px;">
+                        <label for="walkInEmail" style="font-weight:600; font-size:0.9rem; color: var(--text-primary); margin:0;">
+                            Email <span style="color: var(--error-color, #ef4444);">*</span>
+                        </label>
+                        <input id="walkInEmail" type="email" placeholder="" required style="margin:0;" />
+                    </div>
+
+                    <div style="display:flex; flex-direction:column; gap:4px;">
+                        <label for="walkInPhone" style="font-weight:600; font-size:0.9rem; color: var(--text-primary); margin:0;">
+                            Phone <span style="color: var(--error-color, #ef4444);">*</span>
+                        </label>
+                        <input id="walkInPhone" type="text" placeholder="" required style="margin:0;" />
+                    </div>
+
+                    <div style="display:flex; flex-direction:column; gap:4px;">
+                        <label for="walkInMoveInDate" style="font-weight:600; font-size:0.9rem; color: var(--text-primary); margin:0;">
+                            Move in date <span style="color: var(--error-color, #ef4444);">*</span>
+                        </label>
+                        <input id="walkInMoveInDate" type="date" required style="margin:0;" />
+                    </div>
+
+                    <textarea id="walkInNotes" placeholder="Notes (optional)" style="min-height: 80px; margin:0;"></textarea>
+                </div>
+                <div id="walkInTenantError" class="error-message" style="margin-top: 10px;"></div>
+                <div class="modal-buttons">
+                    <button id="walkInTenantSaveBtn" class="btn btn-primary">Save</button>
+                    <button id="walkInTenantCancelBtn" class="btn btn-secondary">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    
+    <script>
+      // Set theme immediately to prevent flash
+      (function(){
+        const stored = localStorage.getItem('apartrent-theme');
+        const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const initial = stored || (prefersDark ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', initial);
+      })();
+      
+      // Setup theme toggle after DOM loads
+      document.addEventListener('DOMContentLoaded', function(){
+        try {
+          const root = document.documentElement;
+          const btn = document.getElementById('themeToggleLL');
+          const stored = localStorage.getItem('apartrent-theme');
+          const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+          const initial = stored || (prefersDark ? 'dark' : 'light');
+          
+          // Update theme toggle button
+          function updateThemeButton(theme) {
+            if (!btn) return;
+            const label = btn.querySelector('.theme-label');
+            const icon = btn.querySelector('.theme-icon');
+            if (label) label.textContent = theme === 'dark' ? 'Dark Mode' : 'Light Mode';
+            if (icon) icon.textContent = theme === 'dark' ? '☀️' : '🌙';
+          }
+          
+          // Update logo based on theme
+          function updateLogo(theme) {
+            const mainLogo = document.getElementById('themeLogo');
+            const logoSrc = theme === 'dark' ? 'darklogo-theme.png' : 'lightlogo-theme.png';
+            if (mainLogo) mainLogo.src = logoSrc;
+          }
+          
+          // Set initial state
+          if (btn) {
+            updateThemeButton(initial);
+          }
+          updateLogo(initial);
+          
+          if (btn && !btn.__wired) {
+            btn.__wired = true;
+            btn.addEventListener('click', function(){
+              const cur = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+              root.setAttribute('data-theme', cur);
+              localStorage.setItem('apartrent-theme', cur);
+              updateThemeButton(cur);
+              updateLogo(cur);
+            });
+          }
+        } catch(e) {
+          console.error('Theme toggle error:', e);
+        }
+      });
+    </script>
+
+    <!-- Floating Chat Bubble -->
+    <div class="chat-bubble-trigger" id="chatBubbleTrigger" onclick="toggleFloatingChat()">
+        <i class="fas fa-comment-dots"></i>
+        <span class="unread-badge" id="unreadBadge" style="display: none;">0</span>
+    </div>
+
+    <!-- Floating Chat Container -->
+    <div class="floating-chat-container" id="floatingChatContainer">
+        <!-- Conversation List View -->
+        <div class="chat-conversations-view" id="chatConversationsView">
+            <div class="floating-chat-header">
+                <div class="floating-chat-header-left">
+                    <div class="floating-chat-avatar">
+                        <i class="fas fa-comments"></i>
+                    </div>
+                    <div class="floating-chat-info">
+                        <h3>Messages</h3>
+                        <p id="conversationCount">0 conversations</p>
+                    </div>
+                </div>
+                <button class="floating-chat-close" onclick="toggleFloatingChat()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="conversation-list" id="conversationList">
+                <!-- Conversation items will be loaded here -->
+            </div>
+        </div>
+
+        <!-- Individual Chat View -->
+        <div class="chat-messages-view" id="chatMessagesView" style="display: none;">
+            <div class="floating-chat-header">
+                <button class="chat-back-btn" onclick="showConversationList()">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+                <div class="floating-chat-header-left">
+                    <div class="floating-chat-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="floating-chat-info">
+                        <h3 id="floatingChatName">Client</h3>
+                        <p id="floatingChatStatus">Active now</p>
+                    </div>
+                </div>
+                <button class="floating-chat-close" onclick="toggleFloatingChat()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="floating-chat-messages" id="floatingChatMessages">
+                <!-- Messages will be loaded here -->
+            </div>
+            <div class="floating-chat-input">
+                <input type="text" id="floatingChatInput" placeholder="Type a message..." />
+                <button class="floating-chat-send" id="floatingChatSend" onclick="sendFloatingMessage()">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Panorama 360 Viewer Modal -->
+    <div class="panorama-viewer-modal" id="panoramaViewerModal">
+        <div class="panorama-viewer-container">
+            <div class="panorama-viewer-header">
+                <div class="panorama-viewer-title">
+                    <i class="fa-solid fa-vr-cardboard"></i>
+                    <span id="panoramaViewerLabel">360° View</span>
+                </div>
+                <button class="panorama-viewer-close" onclick="closePanoramaViewer()">
+                    <i class="fa-solid fa-times"></i> Close
+                </button>
+            </div>
+            <canvas class="panorama-viewer-canvas" id="panoramaCanvas"></canvas>
+            <div class="panorama-viewer-hint">
+                🖱️ Drag to look around • Scroll to zoom
+            </div>
+            <div class="panorama-viewer-controls">
+                <button onclick="resetPanoramaView()">
+                    <i class="fa-solid fa-rotate-left"></i> Reset View
+                </button>
+                <button onclick="toggleFullscreen()">
+                    <i class="fa-solid fa-expand"></i> Fullscreen
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Receipt review modal: view receipt, date, ref#, mark as Paid -->
+    <div id="receiptReviewModal" class="receipt-review-modal-overlay" style="display: none;">
+        <div class="receipt-review-modal">
+            <div class="receipt-review-modal-header">
+                <h3><i class="fa-solid fa-receipt"></i> Payment Receipt</h3>
+                <button type="button" class="receipt-review-modal-close" onclick="closeReceiptReviewModal()" aria-label="Close">&times;</button>
+            </div>
+            <div class="receipt-review-modal-body">
+                <div class="receipt-review-meta">
+                    <div class="receipt-review-row"><span class="receipt-review-label">Reference No.</span><span id="receiptReviewRef">—</span></div>
+                    <div class="receipt-review-row"><span class="receipt-review-label">Date</span><span id="receiptReviewDate">—</span></div>
+                    <div class="receipt-review-row"><span class="receipt-review-label">Amount</span><span id="receiptReviewAmount">—</span></div>
+                    <div class="receipt-review-row"><span class="receipt-review-label">Status</span><span id="receiptReviewStatus">—</span></div>
+                </div>
+                <div class="receipt-review-image-wrap">
+                    <img id="receiptReviewImage" src="" alt="Receipt" class="receipt-review-image">
+                    <p id="receiptReviewImageFallback" class="receipt-review-fallback" style="display: none;">No image available</p>
+                </div>
+            </div>
+            <div class="receipt-review-modal-footer">
+                <button type="button" class="receipt-review-download-btn attach-dl-btn" id="receiptReviewDownloadBtn" onclick="downloadReceiptFromModal()">
+                    Download
+                </button>
+                <button type="button" class="receipt-review-paid-btn" id="receiptReviewPaidBtn" onclick="markReceiptPaidFromModal()">
+                    <i class="fa-solid fa-check"></i> Mark as Paid
+                </button>
+                <button type="button" class="receipt-review-close-btn" onclick="closeReceiptReviewModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Map Location Picker Modal -->
+    <div id="mapPickerModal" class="map-picker-modal" style="display: none;">
+        <div class="map-picker-modal-content">
+            <div class="map-picker-modal-header">
+                <h3><i class="fa-solid fa-map-location-dot"></i> Pinpoint Location on Map</h3>
+                <button class="map-picker-modal-close" onclick="closeMapPickerModal()">&times;</button>
+            </div>
+            <div class="map-picker-modal-body">
+                <div class="map-instructions">
+                    <i class="fa-solid fa-info-circle"></i>
+                    Click on the map, drag the marker, or search for an address to set the exact location of your apartment.
+                </div>
+                <div class="map-search-container">
+                    <i class="fa-solid fa-search map-search-icon"></i>
+                    <input type="text" id="mapLocationSearchModal" class="map-search-input" placeholder="Search for an address...">
+                </div>
+                <div id="landlordMapPickerModal" class="map-container landlord-picker" style="height: 500px;"></div>
+                <div class="map-picker-modal-actions">
+                    <button class="btn-secondary" onclick="closeMapPickerModal()">Cancel</button>
+                    <button class="btn-primary" onclick="confirmMapLocation()">Confirm Location</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

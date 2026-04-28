@@ -1,0 +1,1252 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <title>Apartrent</title>
+    <link rel="icon" type="image/png" href="lightlogo-theme.png">
+    <link rel="stylesheet" href="client.css">
+    <link rel="stylesheet" href="leaflet-maps.css">
+
+    <!-- wag mo kakalimutan mag lagay ng login.js eto yung para sa supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+
+    <!-- create global client and require auth immediately -->
+    <script>
+        const SUPABASE_URL = "https://kexgliyjjyurshanpxdt.supabase.co";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtleGdsaXlqanl1cnNoYW5weGR0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc5NDk4NjYsImV4cCI6MjA3MzUyNTg2Nn0.ltYJ7VODuilex_gbp3dqhwyAsEmPVbhWnExzTppVmR8";
+
+        // create global client so other scripts can reuse
+        window.supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // synchronous early auth check — redirect to login if no session
+        (async () => {
+            try {
+                const { data } = await window.supabaseClient.auth.getSession();
+                const session = data?.session ?? null;
+                if (!session) {
+                    // preserve current path so user can return after login if desired:
+                    const returnTo = encodeURIComponent(window.location.pathname);
+                    window.location.href = `login.html?next=${returnTo}`;
+                    return;
+                }
+                // session exists — proceed
+            } catch (err) {
+                console.error('Auth check failed', err);
+                // fallback: send to login
+                window.location.href = 'login.html';
+            }
+        })();
+    </script>
+
+
+
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap"
+        rel="stylesheet">
+    
+    <!-- Client Panorama 360 View Script -->
+    <script src="client_panorama.js" defer></script>
+</head>
+
+<body>
+    <div class="sidemenucss">
+        <aside class="sidemenu">
+            <img id="themeLogo" src="lightlogo-theme.png" alt="Logo">
+            <div class="menufeatures">
+                <a class="page active" href="" data-target="Dashboard"><i class="fa-solid fa-list"></i>Dashboard</a>
+                <a class="page" href="" data-target="Saved"><i class="fa-solid fa-bookmark"></i>Saved</a>
+                <a class="page" href="" data-target="Rented"><i class="fa-solid fa-bed"></i>Rented Place</a>
+                <!-- <a class="page" href="" data-target="FAQ"><i class="fa-solid fa-circle-question"></i>FAQ</a> -->
+                <a class="page oops" href="" onclick=openLogOut()><i
+                        class="fa-solid fa-arrow-right-from-bracket"></i>Logout</a>
+            </div>
+        </aside>
+    </div>
+    <div class="mainright sidelp actsidelp" id="Dashboard">
+        <div class="pagename">
+            <h2>Dashboard</h2>
+            <div class="header-right">
+                <button id="themeToggle" class="theme-toggle-header" type="button" aria-label="Toggle theme">
+                    <span class="theme-label">Light Mode</span>
+                    <span class="theme-icon">🌙</span>
+                </button>
+                <div class="regedacc" onclick=openUserAcc()>
+                    <p>Hello, Client!</p>
+                    <i class="fa-regular fa-circle-user fa-2x"></i>
+                </div>
+            </div>
+        </div>
+        <div class="layer2lp">
+            <div class="searchbar">
+                <input id="clientSearch" type="search" name="search" placeholder="Search by location, price, rating">
+                <div class="filter-dropdown" id="filterDropdown">
+                    <i class="fa-solid fa-filter" id="filterIcon"></i>
+                    <div class="filter-menu" id="filterMenu">
+                        <div class="filter-option" data-filter="price">
+                            <i class="fa-solid fa-dollar-sign"></i>
+                            <span>Price (Low to High)</span>
+                        </div>
+                        <div class="filter-option" data-filter="rating">
+                            <i class="fa-solid fa-star"></i>
+                            <span>Rating (High to Low)</span>
+                        </div>
+                        <div class="filter-option" data-filter="default">
+                            <i class="fa-solid fa-rotate-left"></i>
+                            <span>Default (Newest)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="availistings" id="clientListings">
+        </div>
+        <div class="selectedrightside selectedRightSide" id="selectedRightSide">
+            <div class="selpagename">
+                <div class="pagenav">
+                    <h2>Dashboard</h2>
+                    <button onclick="goBack()"><i class="fa-solid fa-angles-left"></i>Back</button>
+                </div>
+                <div class="regedacc" onclick=openUserAcc()>
+                    <p>Hello, Client!</p>
+                    <i class="fa-regular fa-circle-user fa-2x"></i>
+                </div>
+            </div>
+            <div class="availphts">
+                <div class="availphtsouter">
+                    <div class="photos">
+                        <img src="final logo.PNG" alt="photos">
+                    </div>
+                    <div class="svicon">
+                        <i class="fa-regular fa-bookmark"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Client Panorama 360 View Section for Dashboard -->
+            <div class="client-panorama-section" style="margin-top: 20px; margin-bottom: 20px;">
+                <h3 style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px; color: var(--text-primary);">
+                    <i class="fa-solid fa-vr-cardboard" style="color: var(--primary-color);"></i>
+                    360° Virtual Tour
+                </h3>
+                <div class="client-panorama-list" id="dashboardClientPanoramaList">
+                    <!-- Panorama items will be added here dynamically -->
+                </div>
+            </div>
+            
+            <div class="sidetoside">
+                <div class="leftside">
+                    <div class="button-bar">
+                        <div class="price">
+                            <p>Price</p>
+                        </div>
+                        <div class="location">
+                            <p>Location</p>
+                            <button onclick="scrollToMapLocation()" class="location-btn" title="View on Map">
+                                <i class="fa-solid fa-map-location-dot"></i> View Map
+                            </button>
+                        </div>
+                        <button class="rentbtn" id="rentNowBtn">RENT NOW!</button>
+                    </div>
+                    <div class="fuldetails">
+                        <div class="dets">
+                            <h3>Detailed Description</h3>
+                        </div>
+                        <div class="detsinfo">
+                            <!-- Details populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+                <div class="rightside">
+                    <div class="contact-card">
+                        <h3>Contact This Property</h3>
+                        <p class="subtext">Choose how you'd like to reach out</p>
+
+                        <div class="contact-option">
+                            <i class="fa-solid fa-phone"></i>
+                            <span class="contact-phone"></span>
+                        </div>
+
+                        <div class="contact-option">
+                            <i class="fa-solid fa-envelope"></i>
+                            <span class="landlord-email"></span>
+                        </div>
+
+                        <div class="contact-option">
+                            <i class="fa-brands fa-facebook-messenger"></i>
+                            <button onclick="openChatWithLandlord()">Send Message</button>
+                        </div>
+
+                        <label class="to-owner" style="display: none;">To: Property Owner</label>
+                        <div class="message-box" style="display: none;">
+                            <textarea placeholder="Write your message..."></textarea>
+                            <button class="send-btn">Send</button>
+                        </div>
+                    </div>
+                    <div class="review-card">
+                        <div class="curratings">
+                            <div class="revret">
+                                <div class="leftings">
+                                    <div class="rating-header">
+                                        <h3>Review & Ratings</h3>
+                                    </div>
+                                    <div class="stars">
+                                        <i class="star fa fa-star"></i>
+                                        <i class="star fa fa-star"></i>
+                                        <i class="star fa fa-star"></i>
+                                        <i class="star fa fa-star"></i>
+                                        <i class="star fa fa-star"></i>
+                                    </div>
+                                </div>
+                                <div class="rightings">
+                                    <div class="score">5.0</div>
+                                    <div class="out-of">OUT OF 5</div>
+                                </div>
+                            </div>
+                            <div class="sort-section">
+                                <div class="sort-dropdown" id="reviewsSort">
+                                    <button type="button" class="sd-btn" aria-haspopup="listbox" aria-expanded="false">
+                                        <span class="sd-prefix">Sort By</span>
+                                        <span class="sd-label">Most Recent</span>
+                                        <i class="fa-solid fa-caret-down sd-caret" aria-hidden="true"></i>
+                                    </button>
+                                    <ul class="sd-menu" role="listbox" aria-label="Sort reviews">
+                                        <li role="option" data-sort-value="recent" class="selected">Most Recent</li>
+                                        <li role="option" data-sort-value="highest">Highest Rated</li>
+                                        <li role="option" data-sort-value="lowest">Lowest Rated</li>
+                                        <li role="option" data-sort-value="oldest">Oldest</li>
+                                    </ul>
+                                </div>
+                                <span>1 Review</span>
+                            </div>
+                            <!-- Reviews populated dynamically -->
+                        </div>
+                        <div class="review-box">
+                            <!-- Individual reviews will be rendered here by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="rentclicked" id="rentClicked" style="display:none;">
+                <div class="selpagename">
+                    <div class="pagenav">
+                        <h2>Rent Now!</h2>
+                        <button class="backBtn"><i class="fa-solid fa-angles-left"></i>Back</button>
+                    </div>
+                    <div class="regedacc" onclick=openUserAcc()>
+                        <p>Hello, Client!</p>
+                        <i class="fa-regular fa-circle-user fa-2x"></i>
+                    </div>
+                </div>
+                <div class="rentsidetoside">
+                    <div class="leftsiderent">
+                        <div class="fillupform">
+                            <h3 class="formhead">Rental Application Form</h3>
+
+                            <div class="form-section">
+                                <h4>Basic Information</h4>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="fullName">Full Name <span style="color: var(--error-color, #ef4444);">*</span></label>
+                                        <input type="text" id="fullName" name="fullName" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="guardianName">Guardian's Full Name <span style="color: var(--text-muted, #999); font-size: 0.85em; font-weight: normal;">(Optional)</span></label>
+                                        <input type="text" id="guardianName" name="guardianName">
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="emergencyContact">Emergency Contact Number <span style="color: var(--error-color, #ef4444);">*</span></label>
+                                        <input type="number" id="emergencyContact" name="emergencyContact" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="email">Email Address <span style="color: var(--error-color, #ef4444);">*</span></label>
+                                        <input type="email" id="email" name="email" required>
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="phone">Phone Number <span style="color: var(--error-color, #ef4444);">*</span></label>
+                                        <input type="number" id="phone" name="phone" required>
+                                    </div>
+                                </div>
+                                <div class="form-group full-width">
+                                    <label for="currentAddress">Current Address <span style="color: var(--error-color, #ef4444);">*</span></label>
+                                    <textarea id="currentAddress" name="currentAddress" rows="3" required></textarea>
+                                </div>
+                            </div>
+                            <div class="form-section unit-selector-section" style="display:none;">
+                                <h4>Select Unit <span style="color: var(--error-color, #ef4444);">*</span></h4>
+                                <p style="font-size:0.9rem;color:var(--text-muted);margin-bottom:8px;">Choose which unit you want to rent. Only available units are shown.</p>
+                                <div class="unit-selector-container" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
+                                <input type="hidden" id="selectedUnitNumber" name="selectedUnitNumber" value="">
+                            </div>
+                            <div class="form-section">
+                                <h4>Rental Details</h4>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="moveInDate">Preferred Move-in Date <span style="color: var(--error-color, #ef4444);">*</span></label>
+                                        <input type="date" id="moveInDate" name="moveInDate" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="lengthOfStay">Length of Stay <span style="color: var(--error-color, #ef4444);">*</span></label>
+                                        <input type="text" id="lengthOfStay" name="lengthOfStay" required placeholder="e.g. minimum of 1 month">
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="totalOccupants">Total Occupants <span style="color: var(--error-color, #ef4444);">*</span></label>
+                                        <input type="number" id="totalOccupants" name="totalOccupants" min="1" required>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-section" data-requirement-section="income">
+                                <h4>Employment/Income Verification</h4>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="employmentStatus">Employment Status <span style="color: var(--error-color, #ef4444);">*</span></label>
+                                        <select id="employmentStatus" name="employmentStatus" required>
+                                            <option value="">Select status</option>
+                                            <option value="employed">Employed</option>
+                                            <option value="self-employed">Self-employed</option>
+                                            <option value="unemployed">Unemployed</option>
+                                            <option value="student">Student</option>
+                                            <option value="retired">Retired</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="guardianEmploymentStatus">Guardian's Employment Status (if
+                                            unemployed) <span style="color: var(--text-muted, #999); font-size: 0.85em; font-weight: normal;">(Optional)</span></label>
+                                        <select id="guardianEmploymentStatus" name="guardianEmploymentStatus">
+                                            <option value="">Select status</option>
+                                            <option value="employed">Employed</option>
+                                            <option value="self-employed">Self-employed</option>
+                                            <option value="unemployed">Unemployed</option>
+                                            <option value="retired">Retired</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="monthlyIncome">Monthly Income Range <span style="color: var(--error-color, #ef4444);">*</span></label>
+                                        <select id="monthlyIncome" name="monthlyIncome" required>
+                                            <option value="">Select range</option>
+                                            <option value="below-15k">Below ₱15,000</option>
+                                            <option value="15k-25k">₱15,000 - ₱25,000</option>
+                                            <option value="25k-40k">₱25,000 - ₱40,000</option>
+                                            <option value="40k-60k">₱40,000 - ₱60,000</option>
+                                            <option value="60k-100k">₱60,000 - ₱100,000</option>
+                                            <option value="above-100k">Above ₱100,000</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="form-group full-width">
+                                    <label for="proofOfIncome">Proof of Income <span style="color: var(--error-color, #ef4444);">*</span></label>
+                                    <input type="file" id="proofOfIncome" name="proofOfIncome"
+                                        accept="image/*" required>
+                                    <small>Upload payslips, bank statements, or other income verification
+                                        documents</small>
+                                </div>
+                            </div>
+                            <div class="form-section" data-requirement-section="identification">
+                                <h4>Identification & Documents</h4>
+                                <div class="form-row">
+                                    <div class="form-group" data-requirement="Valid ID">
+                                        <label for="validId">Valid ID <span style="color: var(--error-color, #ef4444);">*</span></label>
+                                        <input type="file" id="validId" name="validId" accept="image/*"
+                                            required>
+                                        <small>Driver's License, Passport, or any government-issued ID</small>
+                                    </div>
+                                    <div class="form-group" data-requirement="Barangay Clearance">
+                                        <label for="barangayClearance">Barangay Clearance <span style="color: var(--error-color, #ef4444);">*</span></label>
+                                        <input type="file" id="barangayClearance" name="barangayClearance"
+                                            accept="image/*" required>
+                                    </div>
+                                </div>
+                                <div class="form-group" data-requirement="Police Clearance">
+                                    <label for="policeClearance">Police Clearance <span style="color: var(--error-color, #ef4444);">*</span></label>
+                                    <input type="file" id="policeClearance" name="policeClearance"
+                                        accept="image/*" required>
+                                </div>
+                            </div>
+                            <div class="form-section" data-requirement-section="lifestyle">
+                                <h4>Pets & Vehicle terms</h4>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label>Do you have pets? <span style="color: var(--error-color, #ef4444);">*</span></label>
+                                        <div class="radio-group">
+                                            <label class="radio-label">
+                                                <input type="radio" name="hasPets" value="yes" required>
+                                                <span>Yes</span>
+                                            </label>
+                                            <label class="radio-label">
+                                                <input type="radio" name="hasPets" value="no" required>
+                                                <span>No</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Do you own a vehicle? <span style="color: var(--error-color, #ef4444);">*</span></label>
+                                        <div class="radio-group">
+                                            <label class="radio-label">
+                                                <input type="radio" name="hasVehicle" value="yes" required>
+                                                <span>Yes</span>
+                                            </label>
+                                            <label class="radio-label">
+                                                <input type="radio" name="hasVehicle" value="no" required>
+                                                <span>No</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="form-group full-width">
+                                    <label for="additionalInfo">Additional Information <span style="color: var(--text-muted, #999); font-size: 0.85em; font-weight: normal;">(Optional)</span></label>
+                                    <textarea id="additionalInfo" name="additionalInfo" rows="4"
+                                        placeholder="Any additional information you'd like to share..."></textarea>
+                                </div>
+                            </div>
+                            
+                            <div class="form-section">
+                                <div class="terms-checkbox">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="agreeTerms" name="agreeTerms">
+                                        <span>I understand that this application
+                                            is subject to approval.</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="savechanges">
+                                <h3>Want to send this Application?</h3>
+                                <div class="savechangesbtns">
+                                    <button>No</button>
+                                    <button>Send</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="rightsiderent">
+                        <div class="availrentphts">
+                            <div class="rentphotos">
+                                <img src="final logo.PNG" alt="photos">
+                            </div>
+                        </div>
+                        
+                        <!-- Client Panorama 360 View Section -->
+                        <div class="client-panorama-section" style="margin-top: 20px; margin-bottom: 20px;">
+                            <h3 style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px; color: var(--text-primary);">
+                                <i class="fa-solid fa-vr-cardboard" style="color: var(--primary-color);"></i>
+                                360° Virtual Tour
+                            </h3>
+                            <div class="client-panorama-list" id="clientPanoramaList">
+                                <!-- Panorama items will be added here dynamically -->
+                            </div>
+                        </div>
+                        
+                        <div class="detailcard">
+                            <h3>Apartment details</h3>
+
+                            <div class="detail-row">
+                                <span class="detail-label">Price</span>
+                                <span class="detail-value">₱12,000/month</span>
+                            </div>
+
+                            <div class="detail-row">
+                                <span class="detail-label">Location</span>
+                                <span class="detail-value">Paniqui, Tarlac</span>
+                            </div>
+
+                            <div class="detail-row">
+                                <span class="detail-label">Description</span>
+                                <span class="detail-value">A spacious 2-bedroom apartment with modern amenities, close
+                                    to
+                                    public transport and markets.</span>
+                            </div>
+
+                            <div class="detail-row">
+                                <span class="detail-label">Unit type</span>
+                                <span class="detail-value">45 sqm</span>
+                            </div>
+
+                            <div class="detail-row">
+                                <span class="detail-label">Amenities</span>
+                                <span class="detail-value">Garage, Gym, Swimming Pool</span>
+                            </div>
+
+                            <div class="detail-row">
+                                <span class="detail-label">Floor Plan</span>
+                                <span class="detail-value" id="viewFloorPlanLink"><a href="floorplan.pdf"
+                                        onclick="event.preventDefault(); showFloorPlan(this.href);">View Floor
+                                        Plan</a></span>
+                            </div>
+
+
+                            <div class="detail-row">
+                                <span class="detail-label">Requirements</span>
+                                <span class="detail-value">
+                                    - Barangay Clearance<br>
+                                    - Birth Certificate<br>
+                                    - No pets agreement
+                                </span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Online Payment</span>
+                                <span class="detail-value">
+                                    Gcash, Paymaya, Paypal
+                                </span>
+                            </div>
+                        </div>
+                        <div class="innerreview-card">
+                            <div class="curratings">
+                                <div class="revret">
+                                    <div class="leftings">
+                                        <div class="rating-header">
+                                            <h3>Review & Ratings</h3>
+                                        </div>
+                                        <div class="stars">
+                                            <i class="star fa fa-star"></i>
+                                            <i class="star fa fa-star"></i>
+                                            <i class="star fa fa-star"></i>
+                                            <i class="star fa fa-star"></i>
+                                            <i class="star fa fa-star"></i>
+                                        </div>
+                                    </div>
+                                    <div class="rightings">
+                                        <div class="score">5.0</div>
+                                        <div class="out-of">OUT OF 5</div>
+                                    </div>
+                                </div>
+                                <div class="sort-section">
+                                    <div class="sort-dropdown" id="reviewsSort">
+                                        <button type="button" class="sd-btn" aria-haspopup="listbox" aria-expanded="false">
+                                            <span class="sd-prefix">Sort By</span>
+                                            <span class="sd-label">Most Recent</span>
+                                            <i class="fa-solid fa-caret-down sd-caret" aria-hidden="true"></i>
+                                        </button>
+                                        <ul class="sd-menu" role="listbox" aria-label="Sort reviews">
+                                            <li role="option" data-sort-value="recent" class="selected">Most Recent</li>
+                                            <li role="option" data-sort-value="highest">Highest Rated</li>
+                                            <li role="option" data-sort-value="lowest">Lowest Rated</li>
+                                            <li role="option" data-sort-value="oldest">Oldest</li>
+                                        </ul>
+                                    </div>
+                                    <span>1 Review</span>
+                                </div>
+                                <div class="review-box">
+                                    <div class="review-header">
+                                        <span>Verified Renter <br> MAY 04, 2025</span>
+                                        <div class="review-stars">
+                                            <i class="star fa fa-star"></i>
+                                            <i class="star fa fa-star"></i>
+                                            <i class="star fa fa-star"></i>
+                                            <i class="star fa fa-star"></i>
+                                            <i class="star fa fa-star"></i>
+                                        </div>
+                                    </div>
+                                    <div class="review-text">
+                                        Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+                                        Aenean commodo ligula eget dolor. Aenean massa. Cum sociis
+                                        natoque penatibus et magnis dis parturient montes, nascetur
+                                        ridiculus mus. Donec quam felis, ultricies nec, pellentesque
+                                        eu, pretium quis, sem.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="boxchat">
+                            <div class="chat-box" id="chatBox">
+                                <div class="specimessages" id="messages">
+                                    <!-- Messages loaded dynamically -->
+                                </div>
+                                <div class="input-area">
+                                    <input type="text" id="chatInput" placeholder="Type a message...">
+                                    <button onclick="sendMessage()">Send</button>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="savedright sidelp" id="Saved">
+        <div class="pagename">
+            <h2>Saved</h2>
+            <div class="regedacc" onclick=openUserAcc()>
+                <p>Hello, Client!</p>
+                <i class="fa-regular fa-circle-user fa-2x"></i>
+            </div>
+        </div>
+        <div class="availistings" id="savedlistings">
+        </div>
+
+    </div>
+
+    <div class="rentedright sidelp" id="Rented">
+        <div class="pagename">
+            <h2>Rented Apartment</h2>
+            <div class="regedacc" onclick=openUserAcc()>
+                <p>Hello, Client!</p>
+                <i class="fa-regular fa-circle-user fa-2x"></i>
+            </div>
+        </div>
+        <div class="availistings" id="rentedlistings">
+        </div>
+
+        <!-- Enhanced message when client has no rented apartment -->
+        <div id="noRentedListingsMessage" class="no-rented-message" style="display: none;">
+            <div class="no-apartment-illustration">
+                <div class="house-icon">
+                    <i class="fas fa-home"></i>
+                </div>
+                <div class="search-icon">
+                    <i class="fas fa-search"></i>
+                </div>
+            </div>
+            <div class="no-apartment-content">
+                <h4>No Rented Apartment Yet</h4>
+                <p>You don't have any rented apartments yet. Start your journey to find the perfect home!</p>
+                <button class="browse-apartments-btn" onclick="browseApartments()">
+                    <i class="fas fa-search"></i>
+                    Browse Available Apartments
+                </button>
+            </div>
+        </div>
+        
+        <div class="selectedrightside" id="selectedRightSide">
+            <div class="selpagename">
+                <div class="pagenav">
+                    <h2>Rented Apartment</h2>
+                    <button onclick="goBack()"><i class="fa-solid fa-angles-left"></i>Back</button>
+                </div>
+                <div class="regedacc" onclick=openUserAcc()>
+                    <p>Hello, Client!</p>
+                    <i class="fa-regular fa-circle-user fa-2x"></i>
+                </div>
+            </div>
+            <div class="availphts">
+                <div class="availphts-wrapper">
+                    <div class="availphtsouter">
+                        <div class="photos">
+                            <img src="final logo.PNG" alt="photos">
+                        </div>
+                    </div>
+                    <div class="transaction-history-box">
+                        <h4 class="transaction-history-title"><i class="fa-solid fa-receipt"></i> Transaction History</h4>
+                        <div class="transaction-list" id="rentedTransactionList">
+                            <div class="transaction-item transaction-header">
+                                <span class="tx-amount">Amount</span>
+                                <span class="tx-date">Date</span>
+                                <span class="tx-ref">Reference No.</span>
+                                <span class="tx-payment">Payment</span>
+                            </div>
+                            <div class="transaction-empty" id="rentedTransactionEmptyState">No transactions yet.</div>
+                        </div>
+                        <button type="button" class="pay-now-btn" id="payNowBtnRented" onclick="openGcashPaymentModal()">
+                            <i class="fa-solid fa-credit-card"></i> Pay now
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="sidetoside">
+                <div class="leftside">
+                    <div class="fuldetails">
+                        <div class="dets">
+                            <h3>Detailed Description</h3>
+                            <button
+                                type="button"
+                                class="button"
+                                id="viewMyApplicationBtn"
+                                style="margin-top:10px;padding:8px 16px;border:none;border-radius:999px;background:linear-gradient(90deg,#6366f1,#3b82f6);color:#ffffff;font-weight:600;cursor:pointer;box-shadow:0 4px 10px rgba(37,99,235,0.35);">
+                                View Application
+                            </button>
+                        </div>
+                        <div class="detsinfo">
+                            <!-- Details populated dynamically -->
+                        </div>
+                    </div>
+                    <div class="boxchat">
+                        <div class="chat-box" id="chatBox">
+                            <div class="specimessages" id="messages">
+                                <div class="msg renter">Hello, is this apartment still available?</div>
+                                <div class="msg landlord">Yes, it is! Would you like to schedule a viewing?</div>
+                                <div class="msg renter">That would be great!</div>
+                            </div>
+                            <div class="input-area">
+                                <input type="text" id="chatInput" placeholder="Type a message...">
+                                <button onclick="sendMessage()">Send</button>
+                            </div>
+                        </div>
+                    </div>
+
+
+
+                </div>
+                <div class="rightside">
+                    <div class="contact-card">
+                        <h3>Contact This Property</h3>
+                        <p class="subtext">Choose how you'd like to reach out</p>
+
+                        <div class="contact-option">
+                            <i class="fa-solid fa-phone"></i>
+                            <span>+63 0912 345 6789</span>
+                        </div>
+
+                        <div class="contact-option">
+                            <i class="fa-solid fa-envelope"></i>
+                            <span class="landlord-email">landlord@example.com</span>
+                        </div>
+
+                        <div class="contact-option">
+                            <i class="fa-brands fa-facebook-messenger"></i>
+                            <button onclick="openChatWithLandlord()">Send Message</button>
+                        </div>
+
+                        <label class="to-owner" style="display: none;">To: Property Owner</label>
+                        <div class="message-box" style="display: none;">
+                            <textarea placeholder="Write your message..."></textarea>
+                            <button class="send-btn">Send</button>
+                        </div>
+                    </div>
+                    <div class="review-card">
+                        <div class="curratings">
+                            <div class="revret">
+                                <div class="leftings">
+                                    <div class="rating-header">
+                                        <h3>Review & Ratings</h3>
+                                    </div>
+                                    <div class="stars">
+                                        <i class="star fa fa-star"></i>
+                                        <i class="star fa fa-star"></i>
+                                        <i class="star fa fa-star"></i>
+                                        <i class="star fa fa-star"></i>
+                                        <i class="star fa fa-star"></i>
+                                    </div>
+                                </div>
+                                <div class="rightings">
+                                    <div class="score">5.0</div>
+                                    <div class="out-of">OUT OF 5</div>
+                                </div>
+                            </div>
+                            <div class="sort-section">
+                                <div class="sort-dropdown" id="reviewsSort">
+                                    <button type="button" class="sd-btn" aria-haspopup="listbox" aria-expanded="false">
+                                        <span class="sd-prefix">Sort By</span>
+                                        <span class="sd-label">Most Recent</span>
+                                        <i class="fa-solid fa-caret-down sd-caret" aria-hidden="true"></i>
+                                    </button>
+                                    <ul class="sd-menu" role="listbox" aria-label="Sort reviews">
+                                        <li role="option" data-sort-value="recent" class="selected">Most Recent</li>
+                                        <li role="option" data-sort-value="highest">Highest Rated</li>
+                                        <li role="option" data-sort-value="lowest">Lowest Rated</li>
+                                        <li role="option" data-sort-value="oldest">Oldest</li>
+                                    </ul>
+                                </div>
+                                <span>1 Review</span>
+                            </div>
+                            <!-- Reviews populated dynamically -->
+                        </div>
+                        <div class="review-box">
+                            <!-- Individual reviews will be rendered here by JavaScript -->
+                        </div>
+                        <button class="button" onclick="showReviewForm(this)">WRITE A REVIEW</button>
+                        <div class="reviewclicked">
+                            <div class="writehead">
+                                <h3>Review And Rating</h3>
+                            </div>
+                            <div class="writesubhead">
+                                <h4>How was your experience about this apartment?</h4>
+                            </div>
+                            <div class="stars-box">
+                                <i class="wrstar fa fa-star" data-value="1"></i>
+                                <i class="wrstar fa fa-star" data-value="2"></i>
+                                <i class="wrstar fa fa-star" data-value="3"></i>
+                                <i class="wrstar fa fa-star" data-value="4"></i>
+                                <i class="wrstar fa fa-star" data-value="5"></i>
+                            </div>
+                            <div class="write-message">
+                                <textarea placeholder="Write your message..."></textarea>
+                                <button class="reviewsubmitbtn" onclick="submitReview(this)">Submit</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="qrModal" class="qrpopup">
+                        <div class="qrouter">
+                            <div class="qrcont">
+                                <button onclick="closeQR()" class="qrclose">&times;</button>
+                                <h4 id="qrTitle">Scan to Pay</h4>
+                                <img id="qrImage" src="" alt="QR Code">
+                                <div id="qrNote"></div>
+                                <div id="qrName"></div>
+                                <div id="qrNumber"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div class="frequentquestion">
+        <div class="fqAnother">
+            <div class="fqheader">
+                <div class="fqlogo">
+                    <img id="themeLogoFaq" src="lightlogo-theme.png" alt="">
+                </div>
+                <div class="fqbutton">
+                    <svg onclick=closeFAQ() xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512">
+                        <path
+                            d="M342.6 150.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192 210.7 86.6 105.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L146.7 256 41.4 361.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192 301.3 297.4 406.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.3 256 342.6 150.6z" />
+                    </svg>
+                </div>
+                <div class="fqWrap">
+                    <p class="apratrentSup">Welcome to Apartrent FAQ</p>
+                </div>
+            </div>
+            <div class="fqFloat">
+                <h4>General Questions</h4>
+            </div>
+            <div class="fqqeus">
+                <p class="whom">For Rentors</p>
+                <div class="fqfwhat">
+                    <div class="ques" onclick=showAns(this)>
+                        <p>How do I apply to rentals?</p>
+                        <div class="quescaret"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640">
+                                <path
+                                    d="M297.4 438.6C309.9 451.1 330.2 451.1 342.7 438.6L502.7 278.6C515.2 266.1 515.2 245.8 502.7 233.3C490.2 220.8 469.9 220.8 457.4 233.3L320 370.7L182.6 233.4C170.1 220.9 149.8 220.9 137.3 233.4C124.8 245.9 124.8 266.2 137.3 278.7L297.3 438.7z" />
+                            </svg></div>
+                    </div>
+                    <div class="quesans">
+                        <p>You can apply to any Apartrent listing with an "Rent" option. <br>When you submit an
+                            application, it's securely shared with the listing's property owner or manager.
+                            Apartrent
+                            will let them know you've applied and they can review your application right
+                            away.</span>
+                        </p>
+                    </div>
+                </div>
+                <div class="fqfwhat">
+                    <div class="ques" onclick=showAns(this)>
+                        <p>Property manager is not responding?</p>
+                        <div class="quescaret"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640">
+                                <path
+                                    d="M297.4 438.6C309.9 451.1 330.2 451.1 342.7 438.6L502.7 278.6C515.2 266.1 515.2 245.8 502.7 233.3C490.2 220.8 469.9 220.8 457.4 233.3L320 370.7L182.6 233.4C170.1 220.9 149.8 220.9 137.3 233.4C124.8 245.9 124.8 266.2 137.3 278.7L297.3 438.7z" />
+                            </svg></div>
+                    </div>
+                    <div class="quesans">
+                        <p>Listings on Apartments.com are self-managed by the property manager, owner or agent, and
+                            we're sorry we're not able to help here. If a property manager is not answering the
+                            phone,
+                            returning a call, or responding to an email, you may want to move on to another rental
+                            that
+                            interests you. </p>
+                    </div>
+                </div>
+                <p class="whom">For Rentee</p>
+                <div class="fqfwhat">
+                    <div class="ques" onclick=showAns(this)>
+                        <p>How do I edit a listing?</p>
+                        <div class="quescaret"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640">
+                                <path
+                                    d="M297.4 438.6C309.9 451.1 330.2 451.1 342.7 438.6L502.7 278.6C515.2 266.1 515.2 245.8 502.7 233.3C490.2 220.8 469.9 220.8 457.4 233.3L320 370.7L182.6 233.4C170.1 220.9 149.8 220.9 137.3 233.4C124.8 245.9 124.8 266.2 137.3 278.7L297.3 438.7z" />
+                            </svg></div>
+                    </div>
+                    <div class="quesans">
+                        <p>If you'd like to make changes to your listing, First visit Apartrent website and click on
+                            Sign In to log into your account. Now that you are on our dashboard you can select your
+                            desired listing to be edited. Click the pen icon to make changes then save.</p>
+                    </div>
+                </div>
+                <div class="fqfwhat">
+                    <div class="ques" onclick=showAns(this)>
+                        <p>I'm having issues logging in...</p>
+                        <div class="quescaret"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640">
+                                <path
+                                    d="M297.4 438.6C309.9 451.1 330.2 451.1 342.7 438.6L502.7 278.6C515.2 266.1 515.2 245.8 502.7 233.3C490.2 220.8 469.9 220.8 457.4 233.3L320 370.7L182.6 233.4C170.1 220.9 149.8 220.9 137.3 233.4C124.8 245.9 124.8 266.2 137.3 278.7L297.3 438.7z" />
+                            </svg></div>
+                    </div>
+                    <div class="quesans">
+                        <p>Securing your account is a top priority at Apartrent! To ensure that only you and your
+                            associates have access to the listings and account information, we've added Two Factor
+                            authentication for added security. </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="useracc">
+        <div class="useraccdet">
+            <div class="useraccwbg">
+                <div class="accdetclos">
+                    <svg onclick=closeUserAcc() xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512">
+                        <path
+                            d="M342.6 150.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192 210.7 86.6 105.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L146.7 256 41.4 361.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192 301.3 297.4 406.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.3 256 342.6 150.6z" />
+                    </svg>
+                </div>
+                <div class="circleuserpfp">
+                    <i class="fa-regular fa-circle-user fa-4x"></i>
+                </div>
+                <p>Hello, Client!</p>
+                <p>@gmail</p>
+                <div class="chngmail">
+                    <button onclick="showChangeEmailModal()">Change Email</button>
+                </div>
+                <div class="useraccdesc">
+                    <p>Welcome To Apartrent, where renting an apartment is as easy as Look, Click and Rent.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="outlog">
+        <div class="userlogoutdet">
+            <div class="userlogoutwbg">
+                <div class="accdetclos">
+                    <svg onclick=closeLogOut() xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512">
+                        <path
+                            d="M342.6 150.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192 210.7 86.6 105.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L146.7 256 41.4 361.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192 301.3 297.4 406.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.3 256 342.6 150.6z" />
+                    </svg>
+                </div>
+                <div class="circleuserpfp">
+                    <i class="fa-regular fa-circle-user fa-4x"></i>
+                </div>
+                <div class="lgosenten">
+                    <p>Are you sure you want to logout?</p>
+                </div>
+                <div class="logoutBtn">
+                    <button>Log out</button>
+                </div>
+                <div class="logoutCancelBtn">
+                    <button>Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Modal -->
+    <div id="changeEmailModal" class="modal-overlay">
+        <div class="modal-blue-content">
+            <div class="modal-content">
+                <h3>Change Email</h3>
+                <input id="newEmailInput" type="email" placeholder="Enter new email" />
+                <div id="changeEmailError" class="error-message"></div>
+                <div class="modal-buttons">
+                    <button id="submitChangeEmailBtn" class="btn btn-primary">Submit</button>
+                    <button id="cancelChangeEmailBtn" class="btn btn-secondary">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Cash Payment Modal (Pay now from Rented) -->
+    <div id="gcashPaymentModal" class="gcash-payment-modal-overlay" style="display: none;">
+        <div class="gcash-payment-modal">
+            <button class="gcash-payment-modal-close" onclick="closeGcashPaymentModal()" aria-label="Close">&times;</button>
+            <h3 class="gcash-payment-modal-title">Cash Payment</h3>
+            <div class="gcash-payment-amount-row">
+                <div class="gcash-payment-amount" id="gcashPaymentAmount">₱0.00</div>
+            </div>
+            <div id="gcashAdvanceMonthsWrap" class="gcash-advance-months-wrap" style="display: none;">
+                <label for="gcashAdvanceMonths" class="gcash-advance-months-label">How many months?</label>
+                <input type="number" id="gcashAdvanceMonths" class="gcash-advance-months-input" min="1" max="24" value="1" aria-label="Months to pay in advance">
+            </div>
+            <div class="gcash-payment-qr-wrap">
+                <img id="gcashPaymentQrImg" src="" alt="Landlord GCash QR Code" class="gcash-payment-qr">
+                <p id="gcashPaymentQrFallback" class="gcash-payment-qr-fallback" style="display: none;">No QR code available. Contact landlord for GCash details.</p>
+            </div>
+            <div class="gcash-payment-receipt-section">
+                <p class="gcash-payment-receipt-label">1. Pay the amount above, then 2. Upload your receipt below and click Send.</p>
+                <div id="gcashReceiptError" class="gcash-receipt-error" style="display: none;" role="alert"></div>
+                <div class="gcash-payment-receipt-row">
+                    <input type="file" id="gcashReceiptInput" accept="image/*,.pdf" style="display: none;">
+                    <button type="button" class="gcash-upload-receipt-btn" id="gcashUploadReceiptBtn" onclick="document.getElementById('gcashReceiptInput').click();">
+                        <i class="fa-solid fa-upload"></i> Upload Receipt
+                    </button>
+                    <select id="gcashPaymentType" class="gcash-payment-type-select" aria-label="Payment type">
+                        <option value="full">Full payment</option>
+                        <option value="partial">Partial payment</option>
+                        <option value="advance">Advance payment</option>
+                    </select>
+                    <button type="button" class="gcash-send-receipt-btn" id="gcashSendReceiptBtn" onclick="sendReceiptToLandlord()">
+                        <i class="fa-solid fa-paper-plane"></i> Send
+                    </button>
+                </div>
+                <span id="gcashReceiptFileName" class="gcash-receipt-filename"></span>
+                <div id="gcashOcrResult" class="gcash-ocr-result" style="display: none;" role="status"></div>
+            </div>
+            <div class="gcash-payment-or">or</div>
+            <button type="button" class="gcash-pay-cash-btn" onclick="closeGcashPaymentModal(); alert('Please coordinate cash payment with your landlord.');">
+                <i class="fa-solid fa-money-bill-wave"></i> Pay with Cash
+            </button>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <script src="leaflet-maps-integration.js" defer></script>
+    <!-- cache-bust to ensure latest client.js (realtime unit availability updates) is loaded -->
+    <script src="client.js?v=20260313-1"></script>
+    <script>
+        
+      (function(){
+        const stored = localStorage.getItem('apartrent-theme');
+        const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const initial = stored || (prefersDark ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', initial);
+      })();
+      
+      // Setup theme toggle after DOM loads
+      document.addEventListener('DOMContentLoaded', function(){
+        try {
+          const root = document.documentElement;
+          const btn = document.getElementById('themeToggle');
+          const stored = localStorage.getItem('apartrent-theme');
+          const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+          const initial = stored || (prefersDark ? 'dark' : 'light');
+          
+          // Update theme toggle button
+          function updateThemeButton(theme) {
+            if (!btn) return;
+            const label = btn.querySelector('.theme-label');
+            const icon = btn.querySelector('.theme-icon');
+            if (label) label.textContent = theme === 'dark' ? 'Dark Mode' : 'Light Mode';
+            if (icon) icon.textContent = theme === 'dark' ? '☀️' : '🌙';
+          }
+          
+          // Update logo based on theme
+          function updateLogo(theme) {
+            const mainLogo = document.getElementById('themeLogo');
+            const faqLogo = document.getElementById('themeLogoFaq');
+            const logoSrc = theme === 'dark' ? 'darklogo-theme.png' : 'lightlogo-theme.png';
+            if (mainLogo) mainLogo.src = logoSrc;
+            if (faqLogo) faqLogo.src = logoSrc;
+          }
+          
+          // Set initial state
+          if (btn) {
+            updateThemeButton(initial);
+          }
+          updateLogo(initial);
+          
+          if (btn && !btn.__wired) {
+            btn.__wired = true;
+            btn.addEventListener('click', function(){
+              const cur = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+              root.setAttribute('data-theme', cur);
+              localStorage.setItem('apartrent-theme', cur);
+              updateThemeButton(cur);
+              updateLogo(cur);
+            });
+          }
+        } catch(e) {
+          console.error('Theme toggle error:', e);
+        }
+      });
+    </script>
+    
+    <!-- Apartment Image Gallery Modal -->
+    <div id="apartmentImageModal" class="image-gallery-modal">
+        <div class="image-gallery-content">
+            <div class="gallery-header">
+                <h3 id="galleryTitle">Apartment Images</h3>
+                <button class="gallery-close" onclick="closeImageGallery()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="gallery-main">
+                <div class="gallery-image-container">
+                    <img id="galleryMainImage" src="" alt="Apartment Image">
+                    <div class="gallery-navigation">
+                        <button class="gallery-prev" onclick="previousImage()">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <button class="gallery-next" onclick="nextImage()">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="gallery-thumbnails" id="galleryThumbnails">
+                    <!-- Thumbnails will be populated by JavaScript -->
+                </div>
+            </div>
+            <div class="gallery-footer">
+                <div class="gallery-counter">
+                    <span id="currentImageNumber">1</span> / <span id="totalImages">1</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Chat Bubble -->
+    <div class="chat-bubble-trigger" id="chatBubbleTrigger" onclick="toggleFloatingChat()">
+        <i class="fas fa-comment-dots"></i>
+        <span class="unread-badge" id="unreadBadge" style="display: none;">0</span>
+    </div>
+
+    <!-- Floating Chat Container -->
+    <div class="floating-chat-container" id="floatingChatContainer">
+        <div class="floating-chat-header">
+            <div class="floating-chat-header-left">
+                <div class="floating-chat-avatar">
+                    <i class="fas fa-user-tie"></i>
+                </div>
+                <div class="floating-chat-info">
+                    <h3 id="floatingChatName">Property Owner</h3>
+                    <p id="floatingChatStatus">Active now</p>
+                </div>
+            </div>
+            <button class="floating-chat-close" onclick="toggleFloatingChat()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="floating-chat-messages" id="floatingChatMessages">
+            <!-- Messages will be loaded here -->
+        </div>
+        <div class="floating-chat-input">
+            <input type="text" id="floatingChatInput" placeholder="Type a message..." />
+            <button class="floating-chat-send" id="floatingChatSend" onclick="sendFloatingMessage()">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Map Viewer Modal -->
+    <div class="map-viewer-modal" id="mapViewerModal" style="display: none;">
+        <div class="map-viewer-modal-content">
+            <div class="map-viewer-modal-header">
+                <h3><i class="fa-solid fa-map-location-dot"></i> Location & Directions</h3>
+                <button class="map-viewer-modal-close" onclick="closeMapViewerModal()">&times;</button>
+            </div>
+            <div class="map-viewer-modal-body">
+                <div class="map-section">
+                    <div class="map-section-header">
+                        <i class="fa-solid fa-map-location-dot"></i>
+                        <h3>Location & Directions</h3>
+                    </div>
+                    <div id="clientMapViewerModal" class="map-container client-viewer-modal" style="height: 500px;"></div>
+                    <div id="routeInfoModal" class="route-info" style="display: none; margin-top: var(--space-md);"></div>
+                    <div style="margin-top: var(--space-md); display: flex; gap: var(--space-sm);">
+                        <button onclick="getDirectionsToApartment()" class="btn-primary" style="flex: 1; padding: var(--space-md);">
+                            <i class="fa-solid fa-directions"></i> Get Directions
+                        </button>
+                        <button onclick="closeMapViewerModal()" class="btn-secondary" style="padding: var(--space-md);">
+                            Close
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Directions Modal -->
+    <div class="directions-modal" id="directionsModal">
+        <div class="directions-modal-content">
+            <div class="directions-modal-header">
+                <h3><i class="fa-solid fa-directions"></i> Get Directions</h3>
+                <button class="directions-modal-close" onclick="closeDirectionsModal()">&times;</button>
+            </div>
+            <div class="directions-modal-body">
+                <p>Open this location in OpenStreetMap to get turn-by-turn directions.</p>
+                <a id="directionsLink" href="#" target="_blank" class="directions-link">
+                    <i class="fa-solid fa-external-link-alt"></i>
+                    <span>Open in OpenStreetMap</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Panorama 360 Viewer Modal -->
+    <div class="panorama-viewer-modal" id="panoramaViewerModal">
+        <div class="panorama-viewer-container">
+            <div class="panorama-viewer-header">
+                <div class="panorama-viewer-title">
+                    <i class="fa-solid fa-vr-cardboard"></i>
+                    <span id="panoramaViewerLabel">360° View</span>
+                </div>
+                <button class="panorama-viewer-close" onclick="closePanoramaViewer()">
+                    <i class="fa-solid fa-times"></i> Close
+                </button>
+            </div>
+            <canvas class="panorama-viewer-canvas" id="panoramaCanvas"></canvas>
+            <div class="panorama-viewer-hint">
+                🖱️ Drag to look around • Scroll to zoom
+            </div>
+            <div class="panorama-viewer-controls">
+                <button onclick="resetPanoramaView()">
+                    <i class="fa-solid fa-rotate-left"></i> Reset View
+                </button>
+                <button onclick="toggleFullscreen()">
+                    <i class="fa-solid fa-expand"></i> Fullscreen
+                </button>
+            </div>
+        </div>
+    </div>
+    <div class="status-overlay" id="statusOverlay" aria-live="polite" aria-hidden="true">
+  <div class="status-card">
+    <div class="status-spinner" aria-hidden="true"></div>
+    <div class="status-icon" aria-hidden="true"></div>
+    <p class="status-message">Loading…</p>
+  </div>
+</div>
+
+    <!-- Client Application Viewer Modal -->
+    <div id="clientApplicationModal" class="map-viewer-modal" style="display:none;">
+        <div class="map-viewer-modal-content" style="max-width: 720px;">
+            <div class="map-viewer-modal-header">
+                <h3><i class="fa-solid fa-file-lines"></i> Your Application</h3>
+                <button class="map-viewer-modal-close" type="button" onclick="closeClientApplicationModal()">&times;</button>
+            </div>
+            <div class="map-viewer-modal-body">
+                <div id="clientApplicationMeta" style="margin-bottom: 10px; font-weight: 600;"></div>
+                <div id="clientApplicationBody" class="client-application-body"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Requirement Image Viewer Modal -->
+    <div id="requirementImageModal" class="image-gallery-modal">
+        <div class="image-gallery-content" style="max-width:600px;">
+            <div class="gallery-header">
+                <h3 id="requirementImageTitle">Requirement Preview</h3>
+                <button class="gallery-close" type="button" onclick="closeRequirementImageViewer()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="gallery-main">
+                <div class="gallery-image-container">
+                    <img id="requirementImage" src="" alt="Requirement Image">
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
